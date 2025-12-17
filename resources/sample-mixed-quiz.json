@@ -4,12 +4,13 @@
   "questions": [
     {
       "type": "multiple-choice",
-      "question": "What is the capital of France?",
+      "question": "What is the capital of South Africa?",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/South_Africa_%28centered_orthographic_projection%29.svg/500px-South_Africa_%28centered_orthographic_projection%29.svg.png",
       "answers": [
-        "London",
-        "Paris",
-        "Berlin",
-        "Madrid"
+        "Cape Town",
+        "Pretoria",
+        "Bloemfontein",
+        "Johannesburg"
       ],
       "correct": 1,
       "timeLimit": 20
