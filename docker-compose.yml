@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  quiz-mate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quiz-mate
+    ports:
+      - "8084:8080"  # Map host port 8084 to container port 8080
+    volumes:
+      - ./config:/config  # Mount config directory for quiz-mate.cfg
+    environment:
+      - HTTP_PORT=8080
+      - STATIC_ASSETS_SOURCE=local
+    restart: unless-stopped
+    networks:
+      - quiz-mate-network
+
+networks:
+  quiz-mate-network:
+    driver: bridge

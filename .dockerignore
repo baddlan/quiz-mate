@@ -1,4 +1,55 @@
-backend/node_modules
+# Node modules
+node_modules
+**/node_modules
+npm-debug.log
+yarn-error.log
+
+# Build output
+frontend/build
+backend/dist
 dist
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+!LICENSE
 docs
-frontend/node_modules
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config (will be mounted as volume)
+config
+*.cfg
+
+# Development
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Testing
+coverage
+.nyc_output
+**/__tests__
+**/*.test.js
+**/*.spec.js
+
+# Misc
+*.log
+tmp
+temp
