@@ -10,6 +10,71 @@ import "../../assets/icons/material-ui-icon.css";
 
 class Waiting extends Component {
     render() {
+        const questionType = this.props.question?.type || "multiple-choice";
+
+        if (questionType === "text-entry" && this.props.textAnswer) {
+            const playerAnswers = this.props.playerAnswers || [];
+            const myAnswer = playerAnswers.find(a => a.nickname === this.props.game.playerName);
+            const wasMarkedCorrect = myAnswer?.markedCorrect || false;
+            const referenceAnswers = this.props.question?.referenceAnswers || [];
+
+            if (playerAnswers.length > 0) {
+                if (wasMarkedCorrect) {
+                    return (
+                        <CenterBox logo cancel="Exit" {...this.props}>
+                            <img
+                                src={InsertEmoticon}
+                                className="material-ui-icon"
+                                style={{ fontSize: "4.0em" }}
+                                alt="Correct answer"
+                            />
+                            <div className="message-box">
+                                <p>Your answer was correct!</p>
+                                <p>Congratulations!</p>
+                            </div>
+                        </CenterBox>
+                    );
+                } else {
+                    return (
+                        <CenterBox logo cancel="Exit" {...this.props}>
+                            <img
+                                src={SentimentVeryDissatisfied}
+                                className="material-ui-icon"
+                                style={{ fontSize: "4.0em" }}
+                                alt="Not selected"
+                            />
+                            <div className="message-box">
+                                <p>Your answer was not selected.</p>
+                                {referenceAnswers.length > 0 && (
+                                    <>
+                                        <p>Accepted answers:</p>
+                                        <p>{referenceAnswers.join(", ")}</p>
+                                    </>
+                                )}
+                            </div>
+                        </CenterBox>
+                    );
+                }
+            } else {
+                return (
+                    <CenterBox logo cancel="Exit" {...this.props}>
+                        <img
+                            src={PauseCircleOutline}
+                            className="material-ui-icon"
+                            style={{ fontSize: "4.0em" }}
+                            alt="Waiting"
+                        />
+                        <div className="message-box">
+                            <p>You submitted</p>
+                            <p>"{this.props.textAnswer}"</p>
+                            <br />
+                            <p>Waiting for the host to<br />review answers...</p>
+                        </div>
+                    </CenterBox>
+                );
+            }
+        }
+
         if (this.props.selectedAnswer != null) {
             if (this.props.correctAnswer != null) {
                 if (this.props.selectedAnswer === this.props.correctAnswer) {

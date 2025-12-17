@@ -18,6 +18,9 @@ class QuestionEditor extends Component {
         this.onQuestionTextChange = this.onQuestionTextChange.bind(this);
         this.onImageChange = this.onImageChange.bind(this);
         this.removeImage = this.removeImage.bind(this);
+        this.toggleQuestionType = this.toggleQuestionType.bind(this);
+        this.addReferenceAnswer = this.addReferenceAnswer.bind(this);
+        this.removeReferenceAnswer = this.removeReferenceAnswer.bind(this);
     }
 
     onQuestionTextChange(event) {
@@ -36,6 +39,42 @@ class QuestionEditor extends Component {
         const newData = this.props.question.answers.slice();
         newData[index] = value;
         this.props.update({ ...this.props.question, answers: newData });
+    }
+
+    toggleQuestionType(type) {
+        if (type === "text-entry") {
+            this.props.update({
+                ...this.props.question,
+                type: "text-entry",
+                referenceAnswers: this.props.question.referenceAnswers || [],
+                answers: undefined,
+                correct: undefined
+            });
+        } else {
+            this.props.update({
+                ...this.props.question,
+                type: "multiple-choice",
+                answers: this.props.question.answers || ['', '', '', ''],
+                correct: this.props.question.correct || 0,
+                referenceAnswers: undefined
+            });
+        }
+    }
+
+    updateReferenceAnswer(index, value) {
+        const newData = [...(this.props.question.referenceAnswers || [])];
+        newData[index] = value;
+        this.props.update({ ...this.props.question, referenceAnswers: newData });
+    }
+
+    addReferenceAnswer() {
+        const referenceAnswers = [...(this.props.question.referenceAnswers || []), ''];
+        this.props.update({ ...this.props.question, referenceAnswers });
+    }
+
+    removeReferenceAnswer(index) {
+        const referenceAnswers = (this.props.question.referenceAnswers || []).filter((_, i) => i !== index);
+        this.props.update({ ...this.props.question, referenceAnswers });
     }
 
     onImageChange(event) {
@@ -145,10 +184,74 @@ class QuestionEditor extends Component {
         );
     }
 
+    renderQuestionTypeToggle() {
+        const questionType = this.props.question.type || "multiple-choice";
+        return (
+            <Row style={{ marginBottom: "1rem" }}>
+                <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                    <span style={{ fontWeight: "bold" }}>Question Type:</span>
+                    <Button
+                        variant={questionType === "multiple-choice" ? "primary" : "outline-secondary"}
+                        onClick={() => this.toggleQuestionType("multiple-choice")}
+                        size="sm"
+                    >
+                        Multiple Choice
+                    </Button>
+                    <Button
+                        variant={questionType === "text-entry" ? "primary" : "outline-secondary"}
+                        onClick={() => this.toggleQuestionType("text-entry")}
+                        size="sm"
+                    >
+                        Text Entry
+                    </Button>
+                </div>
+            </Row>
+        );
+    }
+
+    renderReferenceAnswers() {
+        const referenceAnswers = this.props.question.referenceAnswers || [];
+        return (
+            <Row>
+                <div className="reference-answers-section">
+                    <div style={{ marginBottom: "0.5rem", fontWeight: "bold" }}>
+                        Reference Answers (optional, for host's reference):
+                    </div>
+                    {referenceAnswers.map((answer, index) => (
+                        <InputGroup key={index} style={{ marginBottom: "0.5rem" }}>
+                            <Form.Control
+                                type="text"
+                                value={answer}
+                                onChange={(e) => this.updateReferenceAnswer(index, e.target.value)}
+                                placeholder={`Reference answer ${index + 1}`}
+                                maxLength="120"
+                            />
+                            <Button
+                                variant="danger"
+                                onClick={() => this.removeReferenceAnswer(index)}
+                            >
+                                <img src={DeleteForever} className="material-ui-icon" alt="Remove" />
+                            </Button>
+                        </InputGroup>
+                    ))}
+                    <Button
+                        variant="secondary"
+                        onClick={this.addReferenceAnswer}
+                        size="sm"
+                    >
+                        + Add Reference Answer
+                    </Button>
+                </div>
+            </Row>
+        );
+    }
+
     render() {
         if (this.props.question) {
+            const questionType = this.props.question.type || "multiple-choice";
             return (
                 <Container fluid className="question-editor-container">
+                    {this.renderQuestionTypeToggle()}
                     <Row>
                         <Form.Control
                             as="textarea"
@@ -160,7 +263,7 @@ class QuestionEditor extends Component {
                         />
                     </Row>
                     {this.renderImageSection()}
-                    {this.renderAnswerBoxes()}
+                    {questionType === "multiple-choice" ? this.renderAnswerBoxes() : this.renderReferenceAnswers()}
                 </Container>
             );
         } else {

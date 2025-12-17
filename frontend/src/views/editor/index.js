@@ -181,13 +181,15 @@ class Editor extends Component {
     }
 
     addQuestion = onCurrentIndex => {
+        const newQuestion = {
+            question: '',
+            type: 'multiple-choice',
+            correct: 0,
+            answers: ['', '', '', '']
+        };
         if (onCurrentIndex) {
             const newData = this.state.workspace.slice();
-            newData.splice(this.state.selectedIndex + 1, 0, {
-                question: '',
-                correct: 0,
-                answers: ['', '', '', '']
-            });
+            newData.splice(this.state.selectedIndex + 1, 0, newQuestion);
             this.setState({
                 workspace: newData,
                 selectedIndex: this.state.selectedIndex + 1,
@@ -197,6 +199,7 @@ class Editor extends Component {
             this.setState({
                 workspace: [...this.state.workspace, {
                     question: '',
+                    type: 'multiple-choice',
                     correct: 0,
                     answers: ['', '', '', '']
                 }],

@@ -26,3 +26,8 @@ export const answerStatsResponse = "ANSWER_STATS_RESPONSE";
 
 export const generalRankingRequest = "GENERAL_RANKING_REQUEST";
 export const generalRankingResponse = "GENERAL_RANKING_RESPONSE";
+
+export const textAnswerSubmitted = "TEXT_ANSWER_SUBMITTED";
+export const textAnswerUpdate = "TEXT_ANSWER_UPDATE";
+export const markAnswersCorrect = "MARK_ANSWERS_CORRECT";
+export const textAnswersResults = "TEXT_ANSWERS_RESULTS";

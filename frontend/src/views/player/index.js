@@ -12,6 +12,8 @@ import {
     nicknameIsTaken,
     roomNotFound,
     server,
+    textAnswerSubmitted,
+    textAnswersResults,
     timerSync
 } from "../../connection/config";
 import { disableReconnectMode, enableReconnectMode } from "../../connection/reconnect";
@@ -33,9 +35,30 @@ class Player extends Component {
             question: null,
             selectedAnswer: null,
             correctAnswer: null,
-            timerValue: 0
+            timerValue: 0,
+            textAnswer: "",
+            playerAnswers: []
         };
         this.selected = this.selected.bind(this);
+        this.onTextChange = this.onTextChange.bind(this);
+        this.submitTextAnswer = this.submitTextAnswer.bind(this);
+    }
+
+    onTextChange(e) {
+        this.setState({ textAnswer: e.target.value });
+    }
+
+    submitTextAnswer() {
+        const answer = this.state.textAnswer.trim();
+        if (answer && this.props.game.roomCode && this.props.game.playerName) {
+            this.socket.emit(
+                textAnswerSubmitted,
+                this.props.game.roomCode,
+                this.props.game.playerName,
+                answer
+            );
+            this.props.switchState(V_WAITING);
+        }
     }
 
     componentDidMount() {
@@ -72,14 +95,25 @@ class Player extends Component {
                     question: question,
                     selectedAnswer: null,
                     correctAnswer: null,
-                    timerValue: this.props.game.hostingRoom.timeLimit
+                    timerValue: this.props.game.hostingRoom.timeLimit,
+                    textAnswer: "",
+                    playerAnswers: []
                 });
                 this.props.switchState(V_QUESTION);
             });
 
             this.socket.on(answersClose, question => {
-                this.setState({ question: question, correctAnswer: question.correct });
+                this.setState({
+                    question: question,
+                    correctAnswer: question.correct
+                });
                 this.props.switchState(V_WAITING);
+            });
+
+            this.socket.on(textAnswersResults, playerAnswers => {
+                this.setState({
+                    playerAnswers: playerAnswers || []
+                });
             });
 
             this.socket.on(timerSync, value => this.setState({ timerValue: value }));
@@ -119,6 +153,8 @@ class Player extends Component {
                         question={this.state.question}
                         selectedAnswer={this.state.selectedAnswer}
                         correctAnswer={this.state.correctAnswer}
+                        textAnswer={this.state.textAnswer}
+                        playerAnswers={this.state.playerAnswers}
                     />
                 );
             case V_QUESTION:
@@ -128,6 +164,9 @@ class Player extends Component {
                         question={this.state.question}
                         selected={this.selected}
                         timer={this.state.timerValue}
+                        textAnswer={this.state.textAnswer}
+                        onTextChange={this.onTextChange}
+                        submitTextAnswer={this.submitTextAnswer}
                     />
                 );
             case V_FINAL:

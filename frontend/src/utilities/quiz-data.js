@@ -34,6 +34,7 @@ export function upliftQuiz(quiz, filename) {
 
 export function validateQuiz(quiz) {
     validateTitle(quiz);
+    validateDefaultTimeLimit(quiz);
     validateQuestions(quiz);
 };
 
@@ -50,6 +51,21 @@ function validateTitle(quiz) {
     }
     if (!quiz.title.trim()) {
         fail("The title is empty");
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Validate the default time limit
+//----------------------------------------------------------------------------------------------------------------------
+
+function validateDefaultTimeLimit(quiz) {
+    if (Object.prototype.hasOwnProperty.call(quiz, "defaultTimeLimit")) {
+        if ("number" !== typeof quiz.defaultTimeLimit) {
+            fail(`The defaultTimeLimit has a wrong data type (${typeof quiz.defaultTimeLimit} instead of number)`);
+        }
+        if (quiz.defaultTimeLimit < 0) {
+            fail(`The defaultTimeLimit must be >= 0 (value: ${quiz.defaultTimeLimit})`);
+        }
     }
 }
 
@@ -86,8 +102,30 @@ function validateQuestion(question, index) {
     if ("string" !== typeof question.question || !question.question.trim()) {
         fail(`${capitalize(questionReference)} has no question text`);
     }
-    validateAnswers(questionReference, question.answers);
-    validateCorrect(questionReference, question);
+
+    const questionType = question.type || "multiple-choice";
+
+    if (questionType === "text-entry") {
+        if (Object.prototype.hasOwnProperty.call(question, "referenceAnswers")) {
+            if (!Array.isArray(question.referenceAnswers)) {
+                fail(`${capitalize(questionReference)} has referenceAnswers that is not an array`);
+            }
+        }
+    } else if (questionType === "multiple-choice") {
+        validateAnswers(questionReference, question.answers);
+        validateCorrect(questionReference, question);
+    } else {
+        fail(`${capitalize(questionReference)} has an invalid type: "${questionType}"`);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(question, "timeLimit")) {
+        if ("number" !== typeof question.timeLimit) {
+            fail(`${capitalize(questionReference)} has a timeLimit with wrong data type (${typeof question.timeLimit} instead of number)`);
+        }
+        if (question.timeLimit < 0) {
+            fail(`${capitalize(questionReference)} has a timeLimit that is less than 0 (value: ${question.timeLimit})`);
+        }
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,107 @@
+{
+  "title": "Mixed Quiz - Multiple Choice & Text Entry Demo",
+  "defaultTimeLimit": 30,
+  "questions": [
+    {
+      "type": "multiple-choice",
+      "question": "What is the capital of France?",
+      "answers": [
+        "London",
+        "Paris",
+        "Berlin",
+        "Madrid"
+      ],
+      "correct": 1,
+      "timeLimit": 20
+    },
+    {
+      "type": "text-entry",
+      "question": "Name any programming language invented by Guido van Rossum",
+      "referenceAnswers": [
+        "Python"
+      ]
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Which planet is known as the Red Planet?",
+      "answers": [
+        "Venus",
+        "Mars",
+        "Jupiter",
+        "Saturn"
+      ],
+      "correct": 1
+    },
+    {
+      "type": "text-entry",
+      "question": "What does HTML stand for? (Type the full name)",
+      "referenceAnswers": [
+        "HyperText Markup Language",
+        "Hypertext Markup Language"
+      ]
+    },
+    {
+      "type": "multiple-choice",
+      "question": "What year did World War II end?",
+      "answers": [
+        "1943",
+        "1944",
+        "1945",
+        "1946"
+      ],
+      "correct": 2,
+      "timeLimit": 45
+    },
+    {
+      "type": "text-entry",
+      "question": "Name the largest ocean on Earth",
+      "referenceAnswers": [
+        "Pacific Ocean",
+        "Pacific"
+      ]
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Who painted the Mona Lisa?",
+      "answers": [
+        "Vincent van Gogh",
+        "Pablo Picasso",
+        "Leonardo da Vinci",
+        "Michelangelo"
+      ],
+      "correct": 2
+    },
+    {
+      "type": "text-entry",
+      "question": "What is the chemical symbol for gold?",
+      "referenceAnswers": [
+        "Au"
+      ]
+    },
+    {
+      "type": "multiple-choice",
+      "question": "How many continents are there?",
+      "answers": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correct": 2
+    },
+    {
+      "type": "text-entry",
+      "question": "Name any country that borders France (just one)",
+      "referenceAnswers": [
+        "Spain",
+        "Italy",
+        "Germany",
+        "Belgium",
+        "Switzerland",
+        "Luxembourg",
+        "Andorra",
+        "Monaco"
+      ]
+    }
+  ]
+}

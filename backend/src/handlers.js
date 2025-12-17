@@ -11,6 +11,9 @@ const logger = require("./logger");
 const addPointsToPlayer = (io, socket, room, player, _index, answer) => {
     const roomObj = state.getRoom(room);
     if (roomObj) {
+        if (roomObj.questionType === "text-entry") {
+            return;
+        }
         roomObj.answerCount++;
         state.getHostSocket(io, room)?.emit(commands.ANSWER_COUNT_UPDATE, roomObj.answerCount);
         roomObj.answerStats[answer]++;
@@ -104,11 +107,18 @@ module.exports.onWebsocketConnect = (io, socket) => {
         log(roomCode, "The host started next question");
         const roomObj = state.getRoom(roomCode);
         if (roomObj) {
-            roomObj.correctAnswer = question.correct;
-            roomObj.answerCount = 0;
-            roomObj.answerStats = question.answers.map(() => 0);
+            roomObj.questionType = question.type || "multiple-choice";
             roomObj.questionIndex = question.index;
             roomObj.questionStart = Date.now();
+
+            if (roomObj.questionType === "text-entry") {
+                roomObj.playerAnswers = [];
+                roomObj.answerCount = 0;
+            } else {
+                roomObj.correctAnswer = question.correct;
+                roomObj.answerCount = 0;
+                roomObj.answerStats = question.answers.map(() => 0);
+            }
         }
         const { correct, ...playerQuestion } = question;
         socket.to(roomCode).emit(commands.ANSWERS_OPEN, { ...playerQuestion });
@@ -133,7 +143,59 @@ module.exports.onWebsocketConnect = (io, socket) => {
     });
 
     //------------------------------------------------------------------------------------------------------------------
-    // ???
+    // A player submits a text answer
+    //------------------------------------------------------------------------------------------------------------------
+
+    socket.on(commands.TEXT_ANSWER_SUBMITTED, (roomCode, playerName, answerText) => {
+        const roomObj = state.getRoom(roomCode);
+        if (roomObj && roomObj.questionType === "text-entry") {
+            const existingAnswer = roomObj.playerAnswers.find(item => item.nickname === playerName);
+            if (!existingAnswer) {
+                roomObj.playerAnswers.push({
+                    nickname: playerName,
+                    answer: answerText,
+                    markedCorrect: false,
+                    timestamp: Date.now()
+                });
+                roomObj.answerCount++;
+                log(roomCode, `Player "${playerName}" submitted text answer: "${answerText}"`);
+                const host = state.getHostSocket(io, roomCode);
+                if (host) {
+                    host.emit(commands.TEXT_ANSWER_UPDATE, roomObj.playerAnswers);
+                    host.emit(commands.ANSWER_COUNT_UPDATE, roomObj.answerCount);
+                }
+            }
+        }
+    });
+
+    //------------------------------------------------------------------------------------------------------------------
+    // The host marks text answers as correct
+    //------------------------------------------------------------------------------------------------------------------
+
+    socket.on(commands.MARK_ANSWERS_CORRECT, (roomCode, correctPlayerNames) => {
+        const roomObj = state.getRoom(roomCode);
+        if (roomObj && roomObj.questionType === "text-entry") {
+            roomObj.playerAnswers.forEach(answerObj => {
+                answerObj.markedCorrect = correctPlayerNames.includes(answerObj.nickname);
+                if (answerObj.markedCorrect) {
+                    const playerObj = roomObj.players.find(item => item.nickname === answerObj.nickname);
+                    if (playerObj) {
+                        playerObj.points++;
+                        playerObj.duration += (answerObj.timestamp - roomObj.questionStart);
+                        log(roomCode, `Player "${answerObj.nickname}" received 1 point (new total: ${playerObj.points})`);
+                    }
+                }
+            });
+            // Update host
+            socket.emit(commands.TEXT_ANSWER_UPDATE, roomObj.playerAnswers);
+            // Send results to all players
+            io.to(roomCode).emit(commands.TEXT_ANSWERS_RESULTS, roomObj.playerAnswers);
+            log(roomCode, `The host marked ${correctPlayerNames.length} answers as correct`);
+        }
+    });
+
+    //------------------------------------------------------------------------------------------------------------------
+    // Timer sync
     //------------------------------------------------------------------------------------------------------------------
 
     socket.on(commands.TIMER_SYNC, (roomCode, value) => socket.to(roomCode).emit(commands.TIMER_SYNC, value));

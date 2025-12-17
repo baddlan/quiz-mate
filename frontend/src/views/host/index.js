@@ -8,16 +8,18 @@ import {
     closeQuestion,
     gameCompleted,
     generalRankingResponse,
+    markAnswersCorrect as markAnswersCorrectEvent,
     newQuestion,
     roomCreated,
     server,
+    textAnswerUpdate,
     userCountUpdate
 } from "../../connection/config";
 import { MAX_WEB_SOCKET_MESSAGE_SIZE } from "../../utilities/constants";
 import { ConnectionWarning } from "./ConnectionWarning";
 import Creating from "./Creating";
 import Final from "./Final";
-import Question, { TAB_ANSWER_STATS, TAB_LEADERBOARD, TAB_LOOK_DOWN, TAB_REVEAL_ANSWER } from "./Question";
+import Question, { TAB_ANSWER_STATS, TAB_LEADERBOARD, TAB_LOOK_DOWN, TAB_REVEAL_ANSWER, TAB_TEXT_ANSWERS } from "./Question";
 import {
     V_CONNECTION_WARNING,
     V_CREATING,
@@ -43,11 +45,14 @@ class Host extends Component {
             answerStats: null,
             generalRanking: null,
             revealAnswer: false,
-            revealStats: false
+            revealStats: false,
+            textAnswers: [],
+            selectedCorrectPlayers: []
         };
         this.onReceiveQuestions = this.onReceiveQuestions.bind(this);
         this.onStartQuiz = this.onStartQuiz.bind(this);
         this.nextButton = this.nextButton.bind(this);
+        this.markAnswersCorrect = this.markAnswersCorrect.bind(this);
     }
 
     componentDidMount() {
@@ -67,11 +72,16 @@ class Host extends Component {
         this.socket.on(answerCountUpdate, count => this.setState({ answerCount: count }));
         this.socket.on(answerStatsResponse, stats => this.setState({ answerStats: stats }));
         this.socket.on(generalRankingResponse, stats => this.setState({ generalRanking: stats }));
+        this.socket.on(textAnswerUpdate, answers => this.setState({ textAnswers: answers }));
 
         this.socket.on(gameCompleted, stats => {
             this.setState({ generalRanking: stats });
             this.props.switchState(V_FINAL);
         });
+    }
+
+    markAnswersCorrect(correctPlayerNames) {
+        this.socket.emit(markAnswersCorrectEvent, this.props.game.hostingRoom.roomCode, correctPlayerNames);
     }
 
     componentWillUnmount() {
@@ -103,7 +113,9 @@ class Host extends Component {
             answerCount: 0,
             questionTab: 0,
             revealAnswer: false,
-            revealStats: false
+            revealStats: false,
+            textAnswers: [],
+            selectedCorrectPlayers: []
         }, () => {
             this.props.switchState(V_QUESTION);
             if (0 <= index) {
@@ -131,6 +143,9 @@ class Host extends Component {
                 break;
             case TAB_ANSWER_STATS:
                 this.setState({ questionTab: TAB_ANSWER_STATS, answerStats: null, revealStats: true });
+                break;
+            case TAB_TEXT_ANSWERS:
+                this.setState({ questionTab: TAB_TEXT_ANSWERS });
                 break;
             case TAB_LEADERBOARD:
                 this.setState({ questionTab: TAB_LEADERBOARD, generalRanking: null });
@@ -174,7 +189,10 @@ class Host extends Component {
                     answerStats={this.state.answerStats}
                     revealAnswer={this.state.revealAnswer}
                     revealStats={this.state.revealStats}
-                    generalRanking={this.state.generalRanking} />);
+                    generalRanking={this.state.generalRanking}
+                    textAnswers={this.state.textAnswers}
+                    selectedCorrectPlayers={this.state.selectedCorrectPlayers}
+                    markAnswersCorrect={this.markAnswersCorrect} />);
             case V_FINAL:
                 return (<Final {...this.props}
                     generalRanking={this.state.generalRanking} />);

@@ -22,6 +22,7 @@ export const TAB_REVEAL_ANSWER = 1;
 export const TAB_ANSWER_STATS = 2;
 export const TAB_LEADERBOARD = 3;
 export const TAB_LOOK_DOWN = 4;
+export const TAB_TEXT_ANSWERS = 5;
 
 const Phase = {
     NOT_STARTED: 1,
@@ -44,7 +45,10 @@ class Question extends Component {
 
     constructor(props) {
         super(props);
-        this.state = { tab: 0 };
+        this.state = {
+            tab: 0,
+            selectedPlayers: []
+        };
         this.timer = React.createRef();
         this.onNextButton = this.onNextButton.bind(this);
         this.endQuiz = this.endQuiz.bind(this);
@@ -52,6 +56,20 @@ class Question extends Component {
         this.renderAnswer = this.renderAnswer.bind(this);
         this.onStopButton = this.onStopButton.bind(this);
         this.timerTick = this.timerTick.bind(this);
+        this.togglePlayerSelection = this.togglePlayerSelection.bind(this);
+        this.submitCorrectAnswers = this.submitCorrectAnswers.bind(this);
+    }
+
+    togglePlayerSelection(playerName) {
+        const selectedPlayers = this.state.selectedPlayers.includes(playerName)
+            ? this.state.selectedPlayers.filter(p => p !== playerName)
+            : [...this.state.selectedPlayers, playerName];
+        this.setState({ selectedPlayers });
+    }
+
+    submitCorrectAnswers() {
+        this.props.markAnswersCorrect(this.state.selectedPlayers);
+        this.setState({ selectedPlayers: [] });
     }
 
     getPhase() {
@@ -137,6 +155,7 @@ class Question extends Component {
     }
 
     QuestionGrid() {
+        const questionType = this.props.question.type || "multiple-choice";
         return (
             <div>
                 <Row>
@@ -165,9 +184,80 @@ class Question extends Component {
                             )}
                         </div>
                     </Col>
-                    {this.props.question.answers.map(this.renderAnswer)}
+                    {questionType === "multiple-choice" && this.props.question.answers.map(this.renderAnswer)}
+                    {questionType === "text-entry" && (
+                        <Col xs={12}>
+                            <div style={{ padding: "1rem", textAlign: "center", fontSize: "1.2em", color: "#888" }}>
+                                Players are typing their answers...
+                            </div>
+                        </Col>
+                    )}
                 </Row>
             </div >
+        );
+    }
+
+    renderTextAnswersView() {
+        const { textAnswers, question } = this.props;
+        const referenceAnswers = question.referenceAnswers || [];
+
+        return (
+            <Container fluid>
+                <div style={{ padding: "1rem" }}>
+                    {referenceAnswers.length > 0 && (
+                        <div style={{ marginBottom: "1rem", padding: "0.5rem", background: "#f8f9fa", borderRadius: "4px", color: "#212529" }}>
+                            <strong>Reference Answers:</strong> {referenceAnswers.join(", ")}
+                        </div>
+                    )}
+                    <div style={{ marginBottom: "1rem", color: "#212529" }}>
+                        <strong>Submitted Answers:</strong>
+                    </div>
+                    {textAnswers.length === 0 ? (
+                        <div style={{ textAlign: "center", padding: "2rem", color: "#888" }}>
+                            No answers submitted yet
+                        </div>
+                    ) : (
+                        <div>
+                            {textAnswers.map((answerObj, index) => (
+                                <div key={index} style={{
+                                    padding: "0.75rem",
+                                    marginBottom: "0.5rem",
+                                    border: "1px solid #ddd",
+                                    borderRadius: "4px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    background: answerObj.markedCorrect ? "#d4edda" : "#fff"
+                                }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={this.state.selectedPlayers.includes(answerObj.nickname) || answerObj.markedCorrect}
+                                        onChange={() => this.togglePlayerSelection(answerObj.nickname)}
+                                        disabled={answerObj.markedCorrect}
+                                        style={{ marginRight: "1rem", width: "20px", height: "20px" }}
+                                    />
+                                    <div style={{ flex: 1, color: "#212529" }}>
+                                        <strong>{answerObj.nickname}:</strong> {answerObj.answer}
+                                        {answerObj.markedCorrect && (
+                                            <span style={{ marginLeft: "0.5rem", color: "#155724", fontWeight: "bold" }}>
+                                                ✓ Marked Correct
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            {this.state.selectedPlayers.length > 0 && (
+                                <Button
+                                    variant="success"
+                                    onClick={this.submitCorrectAnswers}
+                                    style={{ marginTop: "1rem" }}
+                                >
+                                    Mark {this.state.selectedPlayers.length} as Correct
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </Container>
         );
     }
 
@@ -195,14 +285,28 @@ class Question extends Component {
     }
 
     renderAnswerStatsButton(phase) {
-        const style = Phase.REVEALING !== phase || TAB_ANSWER_STATS === this.props.questionTab
+        const questionType = this.props.question?.type || "multiple-choice";
+        const isTextEntry = questionType === "text-entry";
+        const currentTab = this.props.questionTab;
+        const targetTab = isTextEntry ? TAB_TEXT_ANSWERS : TAB_ANSWER_STATS;
+
+        const style = Phase.REVEALING !== phase || currentTab === targetTab
             ? ButtonStyle.DISABLED
             : ButtonStyle.ACTIVE;
+
         const onClick = () => {
-            this.props.changeTab(TAB_ANSWER_STATS);
-            this.props.socket.emit(answerStatsRequest, this.props.game.hostingRoom.roomCode);
+            if (isTextEntry) {
+                this.props.changeTab(TAB_TEXT_ANSWERS);
+            } else {
+                this.props.changeTab(TAB_ANSWER_STATS);
+                this.props.socket.emit(answerStatsRequest, this.props.game.hostingRoom.roomCode);
+            }
         };
-        return this.renderControlButton(Assessment, "Answer", "stats", style, onClick);
+
+        const label1 = isTextEntry ? "Review" : "Answer";
+        const label2 = isTextEntry ? "answers" : "stats";
+
+        return this.renderControlButton(Assessment, label1, label2, style, onClick);
     }
 
     renderLeaderboardButton(phase) {
@@ -275,12 +379,21 @@ class Question extends Component {
     renderQuestion(phase) {
         if (Phase.NOT_STARTED !== phase
             && this.props.questionTab !== TAB_LEADERBOARD
-            && this.props.questionTab !== TAB_LOOK_DOWN) {
+            && this.props.questionTab !== TAB_LOOK_DOWN
+            && this.props.questionTab !== TAB_TEXT_ANSWERS) {
             return (
                 <Container fluid>
                     {this.QuestionGrid()}
                 </Container>
             );
+        } else {
+            return false;
+        }
+    }
+
+    renderTextAnswersTab(phase) {
+        if (Phase.NOT_STARTED !== phase && this.props.questionTab === TAB_TEXT_ANSWERS) {
+            return this.renderTextAnswersView();
         } else {
             return false;
         }
@@ -324,6 +437,7 @@ class Question extends Component {
             <CenterBox logo cancel="End quiz" closeRoomSignal renderJoinInfo {...this.props}>
                 <div style={{ marginTop: "-7vh" }} className={className}>
                     {this.renderQuestion(phase)}
+                    {this.renderTextAnswersTab(phase)}
                     {this.renderLeaderboard(phase)}
                     {this.renderLookDown(phase)}
                     {this.renderControlButtons(phase)}
